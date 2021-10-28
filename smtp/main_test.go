@@ -171,7 +171,7 @@ func TestDefaultEmailTemplate(t *testing.T) {
 		t.Fatalf("failed to execute template: %v", err)
 	}
 
-	if !strings.Contains(body.String(), `<div class="card-title">my-project-id: some-trigger-id</div>`) {
+	if !strings.Contains(body.String(), `<div class="card-title">Build ID: some-build-id</div>`) {
 		t.Error("missing correct .card-title div")
 	}
 

@@ -27,6 +27,7 @@ import (
 	log "github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
 	cbpb "google.golang.org/genproto/googleapis/devtools/cloudbuild/v1"
+	"google.golang.org/api/cloudbuild/v1"
 )
 
 const (
@@ -158,6 +159,17 @@ func (s *smtpNotifier) sendSMTPNotification(build *cbpb.Build) error {
 	return nil
 }
 
+func getTrigger(projectId string, triggerId string) (string, error) {
+	ctx := context.Background()
+	cloudbuildService, err := cloudbuild.NewService(ctx)
+
+	t, err := cloudbuildService.Projects.Triggers.Get(projectId, triggerId).Do()
+	if err != nil {
+		return "", err
+	}
+	return t.Name, nil
+}
+
 func (s *smtpNotifier) buildEmail(build *cbpb.Build) (string, error) {
 	logURL, err := notifiers.AddUTMParams(build.LogUrl, notifiers.EmailMedium)
 	if err != nil {
@@ -165,12 +177,18 @@ func (s *smtpNotifier) buildEmail(build *cbpb.Build) (string, error) {
 	}
 	build.LogUrl = logURL
 
+	triggerName, err := getTrigger(build.ProjectId, build.BuildTriggerId)
+	if err != nil {
+		return "", fmt.Errorf("failed to get the build trigger name: %w", err)
+	}
+	build.BuildTriggerId = triggerName
+
 	body := new(bytes.Buffer)
 	if err := s.tmpl.Execute(body, build); err != nil {
 		return "", err
 	}
 
-	subject := fmt.Sprintf("Cloud Build [%s]: %s", build.ProjectId, build.Id)
+	subject := fmt.Sprintf("Cloud Build [%s]: %s", build.ProjectId, build.BuildTriggerId)
 
 	header := make(map[string]string)
 	if s.mcfg.from != s.mcfg.sender {
@@ -216,7 +234,7 @@ const htmlBody = `<!doctype html>
 <div class="col s2">&nbsp;</div>
 <div class="col s8">
 <div class="card-content white-text">
-<div class="card-title">{{.ProjectId}}: {{.BuildTriggerId}}</div>
+<div class="card-title">Build ID: {{.Id}}</div>
 </div>
 <div class="card-content white">
 <table class="bordered">
