@@ -188,7 +188,8 @@ func (s *smtpNotifier) buildEmail(build *cbpb.Build) (string, error) {
 		return "", err
 	}
 
-	subject := fmt.Sprintf("Cloud Build [%s]: %s", build.ProjectId, build.BuildTriggerId)
+	shortId := strings.Split(build.Id, "-")[0]
+	subject := fmt.Sprintf("Cloud Build [%s]: %s (%s)", build.ProjectId, build.BuildTriggerId, shortId)
 
 	header := make(map[string]string)
 	if s.mcfg.from != s.mcfg.sender {
