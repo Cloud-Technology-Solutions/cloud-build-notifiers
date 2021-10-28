@@ -17,20 +17,20 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args:
   - build
-  - --tag=${_REGISTRY}/${_IMAGE_NAME}:${TAG_NAME}
+  - --tag=${_REGISTRY}/${_IMAGE_NAME}:${SHORT_SHA}
   - --tag=${_REGISTRY}/${_IMAGE_NAME}:${_MAJOR_LATEST}
   - --tag=${_REGISTRY}/${_IMAGE_NAME}:latest
   - --file=./smtp/Dockerfile
   - '.'
 # Run the smoketest to verify that everything built correctly.
-- name: ${_REGISTRY}/${_IMAGE_NAME}:${TAG_NAME}
+- name: ${_REGISTRY}/${_IMAGE_NAME}:${SHORT_SHA}
   args:
   - --smoketest
   - --alsologtostderr
 
 # Push the image with tags.
 images:
-- ${_REGISTRY}/${_IMAGE_NAME}:${TAG_NAME}
+- ${_REGISTRY}/${_IMAGE_NAME}:${SHORT_SHA}
 - ${_REGISTRY}/${_IMAGE_NAME}:${_MAJOR_LATEST}
 - ${_REGISTRY}/${_IMAGE_NAME}:latest
 
@@ -41,8 +41,8 @@ substitutions:
   _REGISTRY: gcr.io/cts-public-images-1
   _IMAGE_NAME: cb-notifiers-smtp
   # Looks like: $NOTIF-$MAJOR-latest. Not meant for overriding.
-  _MAJOR_LATEST: "${TAG_NAME%%.*}-latest"
+  _MAJOR_LATEST: "${SHORT_SHA%%.*}-latest"
 
 tags:
 - cloud-build-notifiers-smtp
-- smtp-${TAG_NAME}
+- smtp-${SHORT_SHA}
